@@ -23,13 +23,33 @@ extra-source-files:
     README.md
 
 library
-    exposed-modules:  MyLib
+    exposed-modules:  Network.AWS.RDS.Utils
 
     -- Modules included in this library but not exported.
     -- other-modules:
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
-    build-depends:    base ^>= 4.14.1.0
-    hs-source-dirs:   src
-    default-language: Haskell2010
+    build-depends:      base          >= 4.14.1.0
+                    ,   amazonka      >= 1.6.1
+                    ,   amazonka-core
+
+    hs-source-dirs:     src
+
+    default-language:   Haskell2010
+
+    default-extensions: OverloadedStrings
+                        LambdaCase
+                        QuasiQuotes
+
+    ghc-options:        -Wall
+                        -Wcompat
+                        -Wincomplete-record-updates
+                        -Wincomplete-uni-patterns
+                        -Wredundant-constraints
+                        -Werror
+                        -fPIC
+                        -static
+                        -optl=-pthread
+
+    cc-options:         -static

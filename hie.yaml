@@ -1,0 +1,5 @@
+cradle:
+  cabal:
+    components:
+      - path: "./src"
+        component: "amazonka-contrib-rds-utils:lib:amazonka-contrib-rds-utils"
