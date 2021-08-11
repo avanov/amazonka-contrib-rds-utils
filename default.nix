@@ -19,6 +19,9 @@ let
             gnumake
             gitAndTools.pre-commit
             haskell-language-server
+            ghc
+
+            zlib
         ];
         shellHook = ''
             export PROJECT_PLATFORM="${builtins.currentSystem}"

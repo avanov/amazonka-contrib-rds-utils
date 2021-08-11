@@ -11,3 +11,11 @@ PROJECT_ROOT            := $(PROJECT_MKFILE_DIR)
 
 build: $(PROJECT_ROOT)/src $(PROJECT_ROOT)/$(PROJECT_NAME).cabal
 	cabal v2-build
+
+.PHONY: run
+run:
+	cabal v2-run generate-db-auth-token -- --help
+
+.PHONY: run-example
+run-example:
+	cabal v2-run generate-db-auth-token -- --hostname example-host.com --port 6543 --username example_user --region eu-west-2
