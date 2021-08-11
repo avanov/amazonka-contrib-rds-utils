@@ -33,6 +33,7 @@ import           Network.AWS.Presign        as Presign
 import           Network.AWS.Types          ( Seconds (..)
                                             , AWSRequest (..)
                                             , Rs
+                                            , Service
                                             )
 import qualified Network.URL                as URL
 
@@ -45,6 +46,9 @@ tokenExpiration = Seconds 900  -- 15 minutes
 
 serviceSigningName :: ByteString
 serviceSigningName = "rds-db"
+
+thisService :: Service
+thisService = RDS.rds { _svcPrefix = serviceSigningName }
 
 dropPrefix :: ByteString -> ByteString
 dropPrefix = drop $ length "https://"
@@ -100,7 +104,7 @@ instance AWSRequest GetDBAuthToken where
     
     request (GetDBAuthToken url)  =
         AWSReq.defaultRequest svc (GetDBAuthToken url) where
-            svc      = (setEndpoint useHTTPS (pack endpoint) port RDS.rds) { _svcPrefix = serviceSigningName }
+            svc      = setEndpoint useHTTPS (pack endpoint) port thisService
             useHTTPS = True 
             endpoint = fromMaybe "localhost" (urlHost url)
             port     = fromMaybe 5432        (urlPort url)
