@@ -47,7 +47,6 @@ run creds = do
             (username   creds)
     
     hPut stdout x
-    pure ()
 
 
 data AWSCreds = AWSCreds
