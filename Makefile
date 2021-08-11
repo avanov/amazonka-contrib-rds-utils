@@ -7,6 +7,7 @@ PROJECT_MKFILE_PATH     := $(word $(words $(MAKEFILE_LIST)),$(MAKEFILE_LIST))
 PROJECT_MKFILE_DIR      := $(shell cd $(shell dirname $(PROJECT_MKFILE_PATH)); pwd)
 
 PROJECT_ROOT            := $(PROJECT_MKFILE_DIR)
+DISTRIBUTIONS           := $(PROJECT_MKFILE_DIR)/dist-newstyle/sdist
 
 
 build: $(PROJECT_ROOT)/src $(PROJECT_ROOT)/$(PROJECT_NAME).cabal
@@ -19,3 +20,15 @@ run:
 .PHONY: run-example
 run-example:
 	cabal v2-run generate-db-auth-token -- --hostname example-host.com --port 6543 --username example_user --region eu-west-2
+
+.PHONY: release
+release: | cleanall distribute
+	cabal upload $(DISTRIBUTIONS)/$(PROJECT_NAME)-*.tar.gz
+
+.PHONY: distribute
+distribute:
+	cabal v2-sdist
+
+.PHONY: cleanall
+cleanall:
+	rm -r $(DISTRIBUTIONS)
