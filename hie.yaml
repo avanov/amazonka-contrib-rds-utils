@@ -3,3 +3,5 @@ cradle:
     components:
       - path: "./src"
         component: "amazonka-contrib-rds-utils:lib:amazonka-contrib-rds-utils"
+      - path: "./exe"
+        component: "amazonka-contrib-rds-utils:exe:generate-db-auth-token"

@@ -6,6 +6,8 @@ module  Network.AWS.RDS.Utils
     ,   Endpoint
     ,   Port
     ,   DBUsername
+    ,   Region
+    ,   regionFromText
     )
 where
 
@@ -14,14 +16,17 @@ import           Control.Lens               ( (^.) )
 import           Control.Monad.Trans.AWS    ( runResourceT, runAWST )
 import           Data.ByteString            ( ByteString, drop, length )
 import           Data.ByteString.Char8      ( pack )
-import           Data.Maybe                 ( fromMaybe )
+import qualified Data.Text                  as T
 import qualified Data.Time.Clock            as Clock
-import           Network.AWS                ( _svcPrefix )
+import           Network.AWS                ( _svcPrefix
+                                            , within
+                                            )
 import qualified Network.AWS.RDS            as RDS
 import           Network.AWS.Endpoint       ( setEndpoint )
 import qualified Network.AWS.Env            as Env
 import qualified Network.AWS.Request        as AWSReq
 import qualified Network.AWS.Response       as AWSResp
+import           Network.AWS.Data.Text      ( fromText )
 import           Network.AWS.Data.Path      ( ToPath (..)
                                             )
 import           Network.AWS.Data.Query     ( ToQuery (..)
@@ -34,12 +39,13 @@ import           Network.AWS.Types          ( Seconds (..)
                                             , AWSRequest (..)
                                             , Rs
                                             , Service
+                                            , Region
                                             )
-import qualified Network.URL                as URL
 
 type Endpoint   = String
 type Port       = Int
 type DBUsername = String
+type Token      = ByteString
 
 tokenExpiration :: Seconds
 tokenExpiration = Seconds 900  -- 15 minutes
@@ -61,57 +67,50 @@ generateDbAuthToken :: Env.Env
                     -> Endpoint
                     -> Port
                     -> DBUsername
-                    -> IO ByteString
-generateDbAuthToken env endpoint port username = do
+                    -> Region
+                    -> IO Token
+generateDbAuthToken env endp prt username region = do
     -- it has some overhead, but we're just making sure we're composing a correct URL
-    let url = URL.URL
-                { URL.url_type = URL.Absolute $ URL.Host { URL.protocol = URL.HTTP True
-                                                         , URL.host     = endpoint
-                                                         , URL.port     = Just (toInteger port)
-                                                         }
-                , URL.url_path   = ""
-                , URL.url_params = [ ("Action", "connect")
-                                   , ("DBUser", username)
-                                   ] 
-                }
+    let action = GetDBAuthToken $ PresignParams
+                                    { endpoint   = endp
+                                    , port       = prt
+                                    , dbUsername = username
+                                    }
 
     signingTime <- Clock.getCurrentTime
-    
-    runResourceT . runAWST env $ do
-        val <- Presign.presignURL
-                (env ^. Env.envAuth)
-                (env ^. Env.envRegion)
-                signingTime
-                tokenExpiration
-                (GetDBAuthToken url)
-        pure $ dropPrefix val
 
-urlHost :: URL.URL -> Maybe String
-urlHost (URL.URL (URL.Absolute (URL.Host _proto host _port)) _path _params) = Just host
-urlHost _ = Nothing
+    runResourceT . runAWST env $
+        within region $ do
+            val <- Presign.presignURL
+                    (env ^. Env.envAuth)
+                    (env ^. Env.envRegion)
+                    signingTime
+                    tokenExpiration
+                    action
+            pure $ dropPrefix val
 
-urlPort :: URL.URL -> Maybe Int
-urlPort (URL.URL (URL.Absolute (URL.Host _proto _host port)) _path _params) = fromIntegral <$> port
-urlPort _ = Nothing
+
+data PresignParams = PresignParams
+    { endpoint   :: Endpoint
+    , port       :: Port
+    , dbUsername :: DBUsername
+    }
 
 
 newtype GetDBAuthTokenResponse = GetDBAuthTokenResponse ByteString
 
-newtype GetDBAuthToken = GetDBAuthToken URL.URL
+newtype GetDBAuthToken = GetDBAuthToken PresignParams
 
 instance AWSRequest GetDBAuthToken where
     type Rs GetDBAuthToken = GetDBAuthTokenResponse
     
-    request (GetDBAuthToken url)  =
-        AWSReq.defaultRequest svc (GetDBAuthToken url) where
-            svc      = setEndpoint useHTTPS (pack endpoint) port thisService
+    request (GetDBAuthToken params)  =
+        AWSReq.defaultRequest svc (GetDBAuthToken params) where
+            svc      = setEndpoint useHTTPS (pack . endpoint $ params) (port params) thisService
             useHTTPS = True 
-            endpoint = fromMaybe "localhost" (urlHost url)
-            port     = fromMaybe 5432        (urlPort url)
 
     response = AWSResp.receiveBytes $ \_s _h x -> pure $ GetDBAuthTokenResponse x
         
-
 
 instance ToPath GetDBAuthToken where
     toPath _ = ""
@@ -122,8 +121,14 @@ instance ToQuery String where
 
 
 instance ToQuery GetDBAuthToken where
-    toQuery (GetDBAuthToken url) = QList (toQuery <$> URL.url_params url)
+    toQuery (GetDBAuthToken params) = QList (toQuery <$> xs) where
+        xs :: [(String, String)]
+        xs = [("Action", "connect"), ("DBUser", dbUsername params)]
 
 
 instance ToHeaders GetDBAuthToken where
     toHeaders _ = []
+
+
+regionFromText :: T.Text -> Either String Region
+regionFromText = fromText

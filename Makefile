@@ -19,15 +19,21 @@ run:
 
 .PHONY: run-example
 run-example:
-	cabal v2-run generate-db-auth-token -- --hostname example-host.com --port 6543 --username example_user --region eu-west-2
-
-.PHONY: release
-release: | cleanall distribute
-	cabal upload $(DISTRIBUTIONS)/$(PROJECT_NAME)-*.tar.gz
+	AWS_ACCESS_KEY_ID=111 AWS_SECRET_ACCESS_KEY=222 \
+	cabal v2-run \
+		generate-db-auth-token --       \
+			--hostname example-host.com \
+			--port     6543 		    \
+			--username example_user		\
+			--region   eu-west-2
 
 .PHONY: distribute
 distribute:
 	cabal v2-sdist
+
+.PHONY: release
+release: | cleanall distribute
+	cabal upload $(DISTRIBUTIONS)/$(PROJECT_NAME)-*.tar.gz
 
 .PHONY: cleanall
 cleanall:

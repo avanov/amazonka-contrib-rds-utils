@@ -1,0 +1,8 @@
+packages: ./*.cabal
+
+-- Haskell community is too ignorant and deaf to technical merits to admit that this is the wrong long-term solution,
+-- and there's no distributed alternatives to the centralised Hackage at the moment,
+-- hence the strict flag is kept here
+-- https://www.reddit.com/r/haskell/comments/p303af/unreasonable_hackage_requirement/h8rnw3u
+package amazonka-contrib-rds-utils
+  ghc-options:  -Werror

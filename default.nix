@@ -9,6 +9,11 @@ let
     ghcEnv  = import "${commonEnvs}/ghc-env.nix" {};
     pkgs    = ghcEnv.pkgs;
 
+    macOsDeps = with pkgs; lib.optionals stdenv.isDarwin [
+        darwin.apple_sdk.frameworks.CoreServices
+        darwin.apple_sdk.frameworks.ApplicationServices
+    ];
+
     devEnv  = pkgs.mkShell {
         # Sets the build inputs, i.e. what will be available in our
         # local environment.
@@ -22,7 +27,7 @@ let
             ghc
 
             zlib
-        ];
+        ] ++ macOsDeps;
         shellHook = ''
             export PROJECT_PLATFORM="${builtins.currentSystem}"
             export LANG=en_US.UTF-8

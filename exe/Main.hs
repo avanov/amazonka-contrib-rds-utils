@@ -7,6 +7,7 @@ import           Data.Text
 import           Data.ByteString            ( hPut )
 import qualified Network.AWS.Auth           as AWSAuth
 import qualified Network.AWS.Env            as AWSEnv
+import           System.Exit                ( die )
 import           System.IO                  ( stdout )
 
 import           Network.AWS                ( LogLevel (Info)
@@ -40,13 +41,17 @@ run creds = do
                                     (Just AWSAuth.envSessionToken)
                                     (Just awsRegionEnvName)
 
-    x <- RDSU.generateDbAuthToken
-            (env & AWSEnv.envLogger .~ lgr)
-            (hostname   creds)
-            (port       creds)
-            (username   creds)
-    
-    hPut stdout x
+    case (RDSU.regionFromText . pack . region $ creds) of
+        Left err  -> die $ "Error: " <> err
+        Right reg -> do
+            token <- RDSU.generateDbAuthToken
+                        ((env & AWSEnv.envLogger .~ lgr) & AWSEnv.envRegion .~ reg)
+                        (hostname   creds)
+                        (port       creds)
+                        (username   creds)
+                        reg
+            hPut stdout token
+
 
 
 data AWSCreds = AWSCreds
