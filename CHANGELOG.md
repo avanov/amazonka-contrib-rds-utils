@@ -1,5 +1,5 @@
-# Revision history for amazonka-contrib-rds-utils
+# Changelog for amazonka-contrib-rds-utils
 
-## 0.1.0.0 -- YYYY-mm-dd
+## 1.6.1.0 -- 2021-08-13
 
-* First version. Released on an unsuspecting world.
+* Initial release.
