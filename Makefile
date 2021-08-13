@@ -31,8 +31,8 @@ run-example:
 distribute:
 	cabal v2-sdist
 
-.PHONY: release
-release: | cleanall distribute
+.PHONY: publish
+publish: | cleanall distribute
 	cabal upload $(DISTRIBUTIONS)/$(PROJECT_NAME)-*.tar.gz
 
 .PHONY: cleanall
