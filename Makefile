@@ -35,6 +35,10 @@ distribute:
 publish: | cleanall distribute
 	cabal upload $(DISTRIBUTIONS)/$(PROJECT_NAME)-*.tar.gz
 
+.PHONY: release
+release:
+	cabal upload $(DISTRIBUTIONS)/$(PROJECT_NAME)-*.tar.gz --publish
+
 .PHONY: cleanall
 cleanall:
 	rm -r $(DISTRIBUTIONS)
