@@ -12,14 +12,13 @@ module  Network.AWS.RDS.Utils
 where
 
 import           Prelude                    hiding ( drop, length )
-import           Control.Lens               ( (^.) )
+import           Control.Lens               ( (^.), (&), (.~) )
 import           Control.Monad.Trans.AWS    ( runResourceT, runAWST )
 import           Data.ByteString            ( ByteString, drop, length )
 import           Data.ByteString.Char8      ( pack )
 import qualified Data.Text                  as T
 import qualified Data.Time.Clock            as Clock
 import           Network.AWS                ( _svcPrefix
-                                            , within
                                             )
 import qualified Network.AWS.RDS            as RDS
 import           Network.AWS.Endpoint       ( setEndpoint )
@@ -76,18 +75,18 @@ generateDbAuthToken env endp prt username region = do
                                     , port       = prt
                                     , dbUsername = username
                                     }
+        regionalEnv = env & Env.envRegion .~ region
 
     signingTime <- Clock.getCurrentTime
 
-    runResourceT . runAWST env $
-        within region $ do
-            val <- Presign.presignURL
-                    (env ^. Env.envAuth)
-                    (env ^. Env.envRegion)
-                    signingTime
-                    tokenExpiration
-                    action
-            pure $ dropPrefix val
+    runResourceT . runAWST regionalEnv $ do
+        val <- Presign.presignURL
+                (regionalEnv ^. Env.envAuth)
+                (regionalEnv ^. Env.envRegion)
+                signingTime
+                tokenExpiration
+                action
+        pure $ dropPrefix val
 
 
 data PresignParams = PresignParams

@@ -1,6 +1,6 @@
 cabal-version:      3.0
 name:               amazonka-contrib-rds-utils
-version:            1.6.1.0
+version:            1.6.1.1
 
 -- A short (one-line) description of the package.
 -- synopsis:
@@ -39,7 +39,7 @@ library
                     ,   bytestring    >= 0.9
                     ,   lens          >= 4.4
                     ,   text          >= 1.1
-                    ,   time          >= 1.11
+                    ,   time          >= 1.9.1
 
     hs-source-dirs:     src
 
@@ -80,7 +80,7 @@ executable generate-db-auth-token
                         -static
                         -optl=-pthread
                         -threaded
-                        -rtsopts "-with-rtsopts=-N -I3 -M1.75G"
+                        -rtsopts "-with-rtsopts=-N"
                         -feager-blackholing
 
   cc-options:           -static

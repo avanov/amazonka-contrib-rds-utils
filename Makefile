@@ -10,7 +10,13 @@ PROJECT_ROOT            := $(PROJECT_MKFILE_DIR)
 DISTRIBUTIONS           := $(PROJECT_MKFILE_DIR)/dist-newstyle/sdist
 
 
-build: $(PROJECT_ROOT)/src $(PROJECT_ROOT)/$(PROJECT_NAME).cabal
+$(PROJECT_ROOT)/cabal.project.local:
+	cabal v2-update
+	cabal v2-configure
+
+build:	$(PROJECT_ROOT)/src \
+		$(PROJECT_ROOT)/$(PROJECT_NAME).cabal \
+		$(PROJECT_ROOT)/cabal.project.local
 	cabal v2-build
 
 .PHONY: run
@@ -22,6 +28,14 @@ run-example:
 	AWS_ACCESS_KEY_ID=111 AWS_SECRET_ACCESS_KEY=222 \
 	cabal v2-run \
 		generate-db-auth-token --       \
+			--hostname example-host.com \
+			--port     6543 		    \
+			--username example_user		\
+			--region   eu-west-2
+
+	cabal v2-run \
+		generate-db-auth-token --       \
+			--discover \
 			--hostname example-host.com \
 			--port     6543 		    \
 			--username example_user		\

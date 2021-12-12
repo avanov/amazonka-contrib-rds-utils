@@ -26,6 +26,7 @@ let
             haskell-language-server
             ghc
 
+            awscli2
             zlib
         ] ++ macOsDeps;
         shellHook = ''
