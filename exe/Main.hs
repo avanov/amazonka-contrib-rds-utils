@@ -21,67 +21,78 @@ import          Options.Applicative
 awsRegionEnvName :: Text
 awsRegionEnvName = "AWS_REGION"
 
+
 -- | Works similarly to / aws rds generate-db-auth-token --hostname --port --username --region /
 main :: IO ()
 main = run =<< execParser opts
     where
         opts =
-            info (awsCreds <**> helper)
+            info (awsOpts <**> helper)
                  ( fullDesc
                 <> progDesc "Generate a temporary access token for RDS"
                 <> header "generate-db-auth-token is a Haskell equivalent of 'aws rds generate-db-auth-token' CLI utility"
                  )
 
-run :: AWSCreds -> IO () 
-run creds = do
-    lgr     <- newLogger Info stdout
-    env     <- AWSEnv.newEnv $ AWSAuth.FromEnv
+
+run :: AWSOptions -> IO () 
+run parsedOpts = do
+    let credsMethod =   if      (useDiscover parsedOpts)
+                        then    AWSAuth.Discover
+                        else    AWSAuth.FromEnv
                                     AWSAuth.envAccessKey
                                     AWSAuth.envSecretKey
                                     (Just AWSAuth.envSessionToken)
                                     (Just awsRegionEnvName)
 
-    case (RDSU.regionFromText . pack . region $ creds) of
+    lgr     <- newLogger Info stdout
+    env     <- AWSEnv.newEnv credsMethod
+
+    case (RDSU.regionFromText . pack . region $ parsedOpts) of
         Left err  -> die $ "Error: " <> err
         Right reg -> do
             token <- RDSU.generateDbAuthToken
-                        ((env & AWSEnv.envLogger .~ lgr) & AWSEnv.envRegion .~ reg)
-                        (hostname   creds)
-                        (port       creds)
-                        (username   creds)
+                        (env & AWSEnv.envLogger .~ lgr)
+                        (hostname   parsedOpts)
+                        (port       parsedOpts)
+                        (username   parsedOpts)
                         reg
             hPut stdout token
 
 
-
-data AWSCreds = AWSCreds
-    { hostname  :: RDSU.Endpoint
-    , port      :: RDSU.Port
-    , username  :: RDSU.DBUsername
-    , region    :: String
+data AWSOptions = AWSOptions
+    { hostname      :: RDSU.Endpoint
+    , port          :: RDSU.Port
+    , username      :: RDSU.DBUsername
+    , region        :: String
+    , useDiscover   :: Bool
     }
 
-awsCreds :: Parser AWSCreds
-awsCreds = AWSCreds
+
+awsOpts :: Parser AWSOptions
+awsOpts = AWSOptions
         <$> strOption
-            ( long "hostname"
-            <> metavar "RDS_ENDPOINT"
-            <> help "RDS Endpoint could be found on AWS RDS web console"
+            (   long "hostname"
+            <>  metavar "RDS_ENDPOINT"
+            <>  help "RDS Endpoint could be found on AWS RDS web console"
             )
         <*> option auto
-            ( long "port"
-            <> help "RDS Database Port"
-            <> showDefault
-            <> value 5432
-            <> metavar "RDS_PORT"
+            (   long "port"
+            <>  help "RDS Database Port"
+            <>  showDefault
+            <>  value 5432
+            <>  metavar "RDS_PORT"
             )
         <*> strOption
-            ( long "username"
-            <> help "RDS Username"
-            <> metavar "RDS_USERNAME"
+            (   long "username"
+            <>  help "RDS Username"
+            <>  metavar "RDS_USERNAME"
             )
         <*> strOption
-            ( long "region"
-            <> help "AWS Region"
-            <> metavar "AWS_REGION"
+            (   long "region"
+            <>  help "AWS Region"
+            <>  metavar "AWS_REGION"
+            )
+        <*> switch
+            (   long "discover"
+            <>  help "auto-discover AWS credentials. Without this flag AWS env vars will be required"
             )
